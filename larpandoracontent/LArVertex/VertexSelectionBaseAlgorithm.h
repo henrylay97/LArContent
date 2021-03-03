@@ -36,6 +36,11 @@ public:
     VertexSelectionBaseAlgorithm();
 
     /**
+     *  @brief  Default destructor
+     */
+    ~VertexSelectionBaseAlgorithm();
+
+    /**
      *  @brief  VertexScore class
      */
     class VertexScore
@@ -388,6 +393,10 @@ private:
 
     bool                    m_isEmptyViewAcceptable;        ///< Whether views entirely empty of hits are classed as 'acceptable' for candidate filtration
     unsigned int            m_minVertexAcceptableViews;     ///< The minimum number of views in which a candidate must sit on/near a hit or in a gap (or view can be empty)
+
+    bool                    m_writeEventTree;
+    std::string             m_eventTreeName;
+    std::string             m_eventFileName;
 };
 
 //------------------------------------------------------------------------------------------------------------------------------------------

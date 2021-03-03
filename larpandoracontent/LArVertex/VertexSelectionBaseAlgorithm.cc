@@ -31,9 +31,29 @@ VertexSelectionBaseAlgorithm::VertexSelectionBaseAlgorithm() :
     m_useDetectorGaps(true),
     m_gapTolerance(0.f),
     m_isEmptyViewAcceptable(true),
-    m_minVertexAcceptableViews(3)
+    m_minVertexAcceptableViews(3),
+    m_writeEventTree(true),
+    m_eventTreeName("EventTree")
 {
 }
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+VertexSelectionBaseAlgorithm::~VertexSelectionBaseAlgorithm()
+{
+  // if(m_writeEventTree)
+  //   {
+  //     try
+  // 	{
+  // 	  PANDORA_MONITORING_API(SaveTree(this->GetPandora(), m_eventTreeName.c_str(), m_eventFileName.c_str(), "UPDATE"));
+  // 	}
+  //     catch (const StatusCodeException &)
+  // 	{
+  // 	  std::cout << "VertexSelectionBaseAlgorithm: Unable to write tree " << m_eventTreeName << " to file " << m_eventFileName << std::endl;
+  // 	}
+  //   }
+}
+
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -156,8 +176,9 @@ StatusCode VertexSelectionBaseAlgorithm::Run()
     VertexVector filteredVertices;
     this->FilterVertexList(pInputVertexList, kdTreeU, kdTreeV, kdTreeW, filteredVertices);
 
-    if (filteredVertices.empty())
-        return STATUS_CODE_SUCCESS;
+    if (filteredVertices.empty()){
+      return STATUS_CODE_SUCCESS;
+    }
 
     BeamConstants beamConstants;
     this->GetBeamConstants(filteredVertices, beamConstants);
@@ -176,6 +197,13 @@ StatusCode VertexSelectionBaseAlgorithm::Run()
             PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, PandoraContentApi::ReplaceCurrentList<Vertex>(*this, m_outputVertexListName));
     }
 
+    // PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_eventTreeName.c_str(), "nInputVertices", (int)pInputVertexList->size()));
+    // PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_eventTreeName.c_str(), "nFilteredVertices", (int)filteredVertices.size()));
+    // PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_eventTreeName.c_str(), "nScoredVertices", (int)vertexScoreList.size()));
+    // PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_eventTreeName.c_str(), "nSelectedVertices", (int)selectedVertexList.size()));
+
+    // PANDORA_MONITORING_API(FillTree(this->GetPandora(), m_eventTreeName));
+    
     return STATUS_CODE_SUCCESS;
 }
 
@@ -354,6 +382,9 @@ StatusCode VertexSelectionBaseAlgorithm::ReadSettings(const TiXmlHandle xmlHandl
     PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, XmlHelper::ReadValue(xmlHandle,
         "OutputVertexListName", m_outputVertexListName));
 
+    PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, XmlHelper::ReadValue(xmlHandle,
+        "EventOutputFileName", m_eventFileName));
+    
     PANDORA_RETURN_RESULT_IF_AND_IF(STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle,
         "ReplaceCurrentVertexList", m_replaceCurrentVertexList));
 
@@ -389,6 +420,12 @@ StatusCode VertexSelectionBaseAlgorithm::ReadSettings(const TiXmlHandle xmlHandl
 
     PANDORA_RETURN_RESULT_IF_AND_IF(STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle,
         "MinVertexAcceptableViews", m_minVertexAcceptableViews));
+
+    PANDORA_RETURN_RESULT_IF_AND_IF(STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle,
+        "WriteEventTree", m_writeEventTree));
+
+    PANDORA_RETURN_RESULT_IF_AND_IF(STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle,
+	"EventTreeName", m_eventTreeName));
 
     return STATUS_CODE_SUCCESS;
 }

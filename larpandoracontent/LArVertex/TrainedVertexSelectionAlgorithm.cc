@@ -20,6 +20,7 @@
 #include "larpandoracontent/LArVertex/GlobalAsymmetryFeatureTool.h"
 #include "larpandoracontent/LArVertex/ShowerAsymmetryFeatureTool.h"
 #include "larpandoracontent/LArVertex/RPhiFeatureTool.h"
+#include "larpandoracontent/LArVertex/EnergyDepositionAsymmetryFeatureTool.h"
 
 #include "larpandoracontent/LArVertex/TrainedVertexSelectionAlgorithm.h"
 
@@ -376,6 +377,9 @@ void TrainedVertexSelectionAlgorithm::PopulateVertexFeatureInfoMap(const BeamCon
 
     const double showerAsymmetry(LArMvaHelper::CalculateFeaturesOfType<ShowerAsymmetryFeatureTool>(m_featureToolVector, this, pVertex,
         slidingFitDataListMap, clusterListMap, kdTreeMap, showerClusterListMap, beamDeweighting, bestFastScore).at(0).Get());
+
+    //    const double dEdxAsymmetry(LArMvaHelper::CalculateFeaturesOfType<EnergyDepositionAsymmetryFeatureTool>(m_featureToolVector, this, pVertex,
+    //	slidingFitDataListMap, clusterListMap, kdTreeMap, showerClusterListMap, beamDeweighting, bestFastScore).at(0).Get());
 
     //const double rPhiFeature(LArMvaHelper::CalculateFeaturesOfType<RPhiFeatureTool>(m_featureToolVector, this, pVertex,
     //    slidingFitDataListMap, clusterListMap, kdTreeMap, showerClusterListMap, beamDeweighting, bestFastScore).at(0).Get());

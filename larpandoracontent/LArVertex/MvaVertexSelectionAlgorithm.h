@@ -40,6 +40,11 @@ public:
      */
     MvaVertexSelectionAlgorithm();
 
+    /**
+     *  @brief  Destructor
+     */
+    ~MvaVertexSelectionAlgorithm();
+
 protected:
     pandora::StatusCode ReadSettings(const pandora::TiXmlHandle xmlHandle);
 
@@ -77,6 +82,10 @@ private:
     std::string                             m_vertexMvaName;                ///< The name of the vertex mva to find
     T                                       m_mvaRegion;                    ///< The region mva
     T                                       m_mvaVertex;                    ///< The vertex mva
+
+    bool                                    m_writeVertexTree;
+    std::string                             m_vertexTreeName;
+    std::string                             m_vertexFileName;
 };
 
 typedef MvaVertexSelectionAlgorithm<AdaBoostDecisionTree> BdtVertexSelectionAlgorithm;

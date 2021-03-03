@@ -34,9 +34,29 @@ namespace lar_content
 
 template<typename T>
 MvaVertexSelectionAlgorithm<T>::MvaVertexSelectionAlgorithm() :
-    TrainedVertexSelectionAlgorithm(),
-    m_filePathEnvironmentVariable("FW_SEARCH_PATH")
+  TrainedVertexSelectionAlgorithm(),
+  m_filePathEnvironmentVariable("FW_SEARCH_PATH"),
+  m_writeVertexTree(true),
+  m_vertexTreeName("VertexTree")
 {
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+template<typename T>
+MvaVertexSelectionAlgorithm<T>::~MvaVertexSelectionAlgorithm()
+{
+  if(m_writeVertexTree)
+    {
+      try
+        {
+          PANDORA_MONITORING_API(SaveTree(this->GetPandora(), m_vertexTreeName.c_str(), m_vertexFileName.c_str(), "UPDATE"));
+        }
+      catch (const StatusCodeException &)
+        {
+	  std::cout << "MvaVertexSelectionAlgorithm: Unable to write tree " << m_vertexTreeName << " to file " << m_vertexFileName << std::endl;
+        }
+    }
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
@@ -81,12 +101,26 @@ void MvaVertexSelectionAlgorithm<T>::GetVertexScoreList(const VertexVector &vert
     LArMvaHelper::MvaFeatureVector eventFeatureList;
     this->AddEventFeaturesToVector(eventFeatureInfo, eventFeatureList);
 
+    const Vertex *pBestVertex(NULL);
+    float bestVertexDr(std::numeric_limits<float>::max());
+    this->GetBestVertex(vertexVector,pBestVertex,bestVertexDr);
+
     VertexFeatureInfoMap vertexFeatureInfoMap;
     for (const Vertex *const pVertex : vertexVector)
     {
         this->PopulateVertexFeatureInfoMap(beamConstants, clusterListMap, slidingFitDataListMap, showerClusterListMap, kdTreeMap, pVertex,
             vertexFeatureInfoMap);
+
+	PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_vertexTreeName.c_str(), "BeamDeweighting", vertexFeatureInfoMap.at(pVertex).m_beamDeweighting));
+	PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_vertexTreeName.c_str(), "EnergyKick", vertexFeatureInfoMap.at(pVertex).m_energyKick));
+	PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_vertexTreeName.c_str(), "LocalAsymmetry", vertexFeatureInfoMap.at(pVertex).m_localAsymmetry));
+	PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_vertexTreeName.c_str(), "GlobalAsymmetry", vertexFeatureInfoMap.at(pVertex).m_globalAsymmetry));
+	PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_vertexTreeName.c_str(), "ShowerAsymmetry", vertexFeatureInfoMap.at(pVertex).m_showerAsymmetry));
+	PANDORA_MONITORING_API(SetTreeVariable(this->GetPandora(), m_vertexTreeName.c_str(), "IsBestVertex", (int) (pVertex == pBestVertex)));
+
+	PANDORA_MONITORING_API(FillTree(this->GetPandora(), m_vertexTreeName));
     }
+
 
     // Use a simple score to get the list of vertices representing good regions.
     VertexScoreList initialScoreList;
@@ -114,7 +148,8 @@ void MvaVertexSelectionAlgorithm<T>::GetVertexScoreList(const VertexVector &vert
 
             if ((pBestRegionVertex->GetPosition() - pVertex->GetPosition()).GetMagnitude() < m_regionRadius)
                 regionalVertices.push_back(pVertex);
-        }
+        
+	}
 
         this->CalculateRPhiScores(regionalVertices, vertexFeatureInfoMap, kdTreeMap);
 
@@ -163,6 +198,9 @@ const pandora::Vertex * MvaVertexSelectionAlgorithm<T>::CompareVertices(const Ve
 template<typename T>
 StatusCode MvaVertexSelectionAlgorithm<T>::ReadSettings(const TiXmlHandle xmlHandle)
 {
+    PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, XmlHelper::ReadValue(xmlHandle,
+        "VertexOutputFileName", m_vertexFileName));
+
     PANDORA_RETURN_RESULT_IF_AND_IF(STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle,
         "FilePathEnvironmentVariable", m_filePathEnvironmentVariable));
 
@@ -174,6 +212,12 @@ StatusCode MvaVertexSelectionAlgorithm<T>::ReadSettings(const TiXmlHandle xmlHan
 
     PANDORA_RETURN_RESULT_IF_AND_IF(STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle,
         "VertexMvaName", m_vertexMvaName));
+
+    PANDORA_RETURN_RESULT_IF_AND_IF(STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle,
+        "WriteVertexTree", m_writeVertexTree));
+
+    PANDORA_RETURN_RESULT_IF_AND_IF(STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, XmlHelper::ReadValue(xmlHandle,
+        "VertexTreeName", m_vertexTreeName));
 
     // ATTN : Need access to base class member variables at this point, so call read settings prior to end of this function
     PANDORA_RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, TrainedVertexSelectionAlgorithm::ReadSettings(xmlHandle));
